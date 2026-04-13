@@ -1,3 +1,6 @@
+[2.0.2z-alpha]
+1. Add allow-downloads on miniapp
+
 [2.0.2y-alpha]
 1. Add utcToLocalOffset function
 
