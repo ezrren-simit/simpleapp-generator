@@ -1,3 +1,40 @@
+[2.0.3l-alpha]
+1. Remove docnoformat form and page templates
+
+[2.0.3k-alpha]
+1. Update sharelibs imports to @simtrain/shared package
+
+[2.0.3j-alpha]
+1. Replace CustomFieldFormField with SimpleAppJsonForms in MiniAppSettingPage 
+2. Remove redundant custom field form templates
+
+[2.0.3i-alpha]
+1. Add uiSchema for custom field
+2. Remove unused lang template files (cn.ts._eta, en.ts.eta)
+3. Migrate getValidateService import to @simtrain/shared
+
+[2.0.3h-alpha]
+1. Split monolithic simpleapp-event plugin into focused plugins
+
+[2.0.3g-alpha]
+1. Remove unused workflow dead code from frontend and backend
+
+[2.0.3f-alpha]
+1. Migrate license imports to shared package
+2. Replace useDayjs with dayjs
+
+[2.0.3e-alpha]
+1. Fix eslint error
+
+[2.0.3d-alpha]
+1. Fix generator no generate sub level enum
+2. Fix schema no use enum
+
+[2.0.3c-alpha]
+1. Remove profile service default data
+2. Fix simple app intercepter cannot capture correct error message
+3. Add various string utils
+
 [2.0.3b-alpha]
 1. Add dateformat in user context
 2. Add allow downloads

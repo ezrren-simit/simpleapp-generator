@@ -1,6 +1,5 @@
 import * as constants from './constant';
 import { readJsonSchemaBuilder } from './processors/jsonschemabuilder';
-import { generateWorkflows } from './processors/bpmnbuilder';
 import { allforeignkeys, allfields } from './storage';
 import {
   TypeGenerateDocumentVariable,
@@ -171,11 +170,6 @@ export const run = async (
     const langjsonstr = readFileSync(defaultLangFile, 'utf-8');
 
     langdata = JSON.parse(langjsonstr);
-  }
-
-  if (configs.bpmnFolder) {
-    // log.info("Process bpmn folder ",configs.bpmnFolder)
-    allbpmn = await generateWorkflows(configs, genFor);
   }
 
   generateSystemFiles(activatemodules, allbpmn);
@@ -922,6 +916,10 @@ const getCodeGenHelper = () =>
   "const camelCaseToWords = (s) => {const result = s.replace(/([A-Z])/g, ' $1');return result.charAt(0).toUpperCase() + result.slice(1);};" +
   'const upperFirstCase = (value) => { return value.charAt(0).toUpperCase() + value.slice(1); };' +
   'const camelToKebab = (value) => { return value.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase(); };' +
+  // Converts camelCase/PascalCase to SCREAMING_SNAKE_CASE for use as TypeScript enum keys.
+  // Two-pass regex: first inserts _ at camelCase boundaries (e.g. upgradeStudent → upgrade_Student),
+  // then handles acronym-to-word transitions (e.g. SIMITFoo → SIMIT_Foo) before uppercasing.
+  'const camelToScreamingSnake = (value) => { return value.replace(/([a-z\\d])([A-Z])/g, "$1_$2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2").toUpperCase(); };' +
   'const removeSuffix = (input, suffix) => { return input.endsWith(suffix) ? input.slice(0, -suffix.length) : input };' +
   'const isWhitelistedMiniApp = (actionName, it) => { return it.miniApp.whitelistApis?.[actionName] === true };' +
   'const titleCase = (value) => { return value.replace(/([a-z])([A-Z])/g, "$1 $2"); }; ' +
@@ -931,4 +929,26 @@ const getCodeGenHelper = () =>
   JSON.stringify(skipIsolationDocument) +
   ';' +
   'const getSystemResources = () => ' +
-  JSON.stringify(systemResources);
+  JSON.stringify(systemResources) +
+  ';' +
+  // Builds a Map from enum-value fingerprint → base enum name (without "Enum" suffix).
+  // Reads $defs/$definitions from the schema and prefixes with resourceName || documentName.
+  // Used by enum.ts.eta and schema.ts.eta so the logic lives in one place.
+  'const buildDefEnumMap = (jsonschema) => {' +
+  '  const defs = jsonschema?.$defs || jsonschema?.definitions || {};' +
+  "  const xconfig = jsonschema?.['x-simpleapp-config'] || {};" +
+  "  const prefix = upperFirstCase(xconfig.resourceName || xconfig.documentName || '');" +
+  '  const map = new Map();' +
+  '  for (const [defName, defObj] of Object.entries(defs)) {' +
+  "    if (defObj.type === 'string' && Array.isArray(defObj.enum) && defObj.enum.length > 0) {" +
+  "      map.set(defObj.enum.slice().sort().join('|'), prefix + upperFirstCase(defName));" +
+  '    }' +
+  '  }' +
+  '  return map;' +
+  '};' +
+  // Resolves the base enum name (without "Enum" suffix) for a given property.
+  // Checks defEnumMap first (shared $defs enum), falls back to modelName + fieldName (inline enum).
+  'const resolveEnumBaseName = (enumValues, defEnumMap, modelName, fieldName) => {' +
+  "  const sig = enumValues.slice().sort().join('|');" +
+  '  return defEnumMap.has(sig) ? defEnumMap.get(sig) : modelName + upperFirstCase(fieldName);' +
+  '};';
